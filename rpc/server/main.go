@@ -8,7 +8,9 @@ import (
 )
 
 func main(){
-	rpc.Register(new(Student))//注册向外提供服务的结构体, 在server.register中 suitableMethods(s.typ, true) 方法会获取所有方法
+	//注册向外提供服务的结构体, 在server.register中 suitableMethods(s.typ, true) 方法会获取所有方法
+	//通过反射获取方法及参数信息
+	rpc.Register(new(Student))
 	//把服务处理绑定到http协议上
 	rpc.HandleHTTP()
 	err := http.ListenAndServe(":8080", nil)
