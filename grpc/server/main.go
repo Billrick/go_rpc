@@ -1,50 +1,52 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
+	"flag"
+	"fmt"
+	"github.com/jmoiron/sqlx"
+	"google.golang.org/grpc"
 	"log"
 	"net"
-	"strconv"
-
-	"google.golang.org/grpc"
-	student "z.cn/20200825-rpc/grpc/proto"
+	"z.cn/20200825-rpc/grpc/server/conf"
+	"z.cn/20200825-rpc/grpc/server/serviceimpl"
+	"z.cn/20200825-rpc/grpc/service"
 )
 
-const (
-	port = ":8080"
-)
+func main(){
+	dsn := getCmdAgrs()
+	db,err := sqlx.Connect("mysql",dsn)
+	if err != nil{
+		log.Fatalf("connect db failed ,err",err)
+		return
+	}
+	err = db.Ping()
+	if err!= nil {
+		log.Fatalf("connect db ping() failed ,err",err)
+	}
+	log.Println("connect db success !")
+	ls , err := net.Listen("tcp",":80")
+	if err != nil{
+		log.Fatalf("listen :80 failed ,err",err)
+		return
+	}
+	server := grpc.NewServer()
+	studentService := serviceimpl.NewStudentServiceServer(db)
+	//注册服务
+	service.RegisterStudentServiceServer(server,studentService)
 
-type server struct {
-	student.UnimplementedGoSutdentServer
+
+	server.Serve(ls)
+	defer db.Close()
 }
 
-// SayHello implements helloworld.GreeterServer
-func (s *server) GetSutdents(ctx context.Context, in *student.SendParam) (*student.GetResponse, error) {
-	students := make([]map[string]interface{},0)
-	for i := 0; i < 5; i++ {
-		tmp := make(map[string]interface{},3)
-		tmp["name"] = "stu" + strconv.Itoa(i)
-		tmp["age"] = i
-		tmp["married"] = (i % 2 == 0)
-		students = append(students,tmp)
-	}
-	data,err := json.Marshal(students)
-	if err != nil {
-		return &student.GetResponse{HttpCode: 500, Response: err.Error()},err
-	}
-	return &student.GetResponse{HttpCode: 200,Response:string(data)},nil
-}
-
-func main() {
-	lis, err := net.Listen("tcp", port)
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-	//注册服务并保留方法
-	s := grpc.NewServer()
-	student.RegisterGoSutdentServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
-	}
+func getCmdAgrs()(dsn string){
+	c := conf.DbConf{}
+	flag.StringVar(&c.Host,"host",conf.HOST,"db host")
+	flag.Int64Var(&c.Port,"port",int64(conf.PORT),"db host")
+	flag.StringVar(&c.USERNAME,"username",conf.USERNAME,"db password")
+	flag.StringVar(&c.PASS,"pass",conf.PASSWORD,"db password")
+	flag.StringVar(&c.Params,"params",conf.PARAMS,"db host")
+	flag.StringVar(&c.DbName,"dbname",conf.DBNAME,"db host")
+	dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?%s",c.USERNAME,c.PASS,c.Host,c.Port,c.DbName,c.Params)
+	return
 }

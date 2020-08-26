@@ -5,12 +5,12 @@ import (
 	"google.golang.org/grpc"
 	"log"
 	"time"
-	sutdent "z.cn/20200825-rpc/grpc/proto"
+	service "z.cn/20200825-rpc/grpc/service"
 )
 
 const (
-	address     = "localhost:8080"      //ip + port 服务地址
-	defaultName = "world"
+	address     = "localhost:80"      //ip + port 服务地址
+	version = "v1.0"
 )
 
 func main(){
@@ -19,13 +19,21 @@ func main(){
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := sutdent.NewGoSutdentClient(conn)
+	c := service.NewStudentServiceClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.GetSutdents(ctx, &sutdent.SendParam{Address: address,Method: ""})
+
+	stu := service.Student{Name: "zhangsan",Age: 18}
+	response, err := c.Create(ctx, &service.CreateRequest{Version: version,Stu: &stu})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Fatalf("%v", err)
 	}
-	log.Printf("getstudents: %s", r.GetResponse())
+	log.Printf("create: %s", response)
+
+	readResponse,err := c.Read(ctx,&service.ReadRequest{Version: version})
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	log.Printf("read: %s", readResponse)
 }

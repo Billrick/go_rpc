@@ -1,0 +1,63 @@
+//指定协议
+syntax = "proto3";
+
+package service;
+
+//学生结构体
+message student{
+  int64 id = 1;
+  string name = 2;
+  //repeated = 切片
+  //repeated string hobby = 4;
+  int64 age = 3;
+}
+//定义向外暴露的请求结构体与响应结构体
+message CreateRequest{
+  string version = 1;
+  //字段     字段顺序
+  student stu = 2;
+}
+
+message CreateResponse{
+  string version = 1;
+  int64 id = 2;
+}
+
+message UpdateRequest{
+  string version = 1;
+  student stu = 2;
+}
+
+message UpdateResponse{
+  string version = 1;
+  int64 rows = 2;
+}
+
+message RemoveRequest{
+  string version = 1;
+  int64 id = 2;
+}
+
+message RemoveResponse{
+  string version = 1;
+  int64 rows = 2;
+}
+
+message ReadRequest{
+  string version = 1;
+  int64 id = 2;
+}
+
+message ReadResponse{
+  string version = 1;
+  repeated student students = 2;
+}
+
+//定义向外暴露的服务,服务端需要实现改接口所有方法
+service StudentService{
+  rpc Create(CreateRequest) returns (CreateResponse){};
+  rpc Update(UpdateRequest) returns (UpdateResponse){};
+  rpc Remove(RemoveRequest) returns (RemoveResponse){};
+  rpc Read(ReadRequest) returns (ReadResponse){};
+}
+
